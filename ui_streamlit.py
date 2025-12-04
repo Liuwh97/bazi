@@ -16,6 +16,22 @@ ANSI_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
 # Streamlit 1.52 参数为 page_title（旧版是 title）
 st.set_page_config(page_title="八字排盘 (Streamlit)", page_icon="🧮", layout="wide")
+
+# 简单配色与排版微调
+st.markdown(
+    """
+    <style>
+    .note-box {
+        padding: 0.5rem 0.75rem;
+        background: #f5f7fa;
+        border: 1px solid #e3e7ee;
+        border-radius: 6px;
+    }
+    .small-mono {font-family: SFMono-Regular,Consolas,Menlo,monospace; font-size: 12px;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 st.title("八字排盘（Streamlit UI）")
 st.caption("基于 bazi.py，所有计算在本地完成，方便保持与上游代码同步。")
 
@@ -51,20 +67,36 @@ def split_sections(text: str):
 
 
 today = datetime.datetime.now()
-st.subheader("输入参数")
-with st.form("bazi-form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        year = st.number_input("年", min_value=1850, max_value=2100, value=today.year, step=1)
-        month = st.number_input("月", min_value=1, max_value=12, value=today.month, step=1)
-        day = st.number_input("日", min_value=1, max_value=31, value=today.day, step=1)
-    with col2:
-        hour = st.number_input("时 (0-23)", min_value=0, max_value=23, value=today.hour, step=1, help="按24小时制")
-        calendar = st.radio("日期类型", ["公历", "农历"], index=0, horizontal=True)
-        is_leap = st.checkbox("闰月（仅农历有效）", value=False)
-        is_female = st.checkbox("女性（-n）", value=False)
+st.title("八字排盘（Streamlit UI）")
+st.caption("表单在左侧侧栏，右侧显示排盘结果。保持与上游 bazi.py 兼容，不改动核心逻辑。")
 
-    submitted = st.form_submit_button("开始排盘")
+# 预设示例，便于快速体验
+presets = {
+    "自定义": None,
+    "示例：1977-09-23 19 女 公历": {"year": 1977, "month": 9, "day": 23, "hour": 19, "calendar": "公历", "is_leap": False, "is_female": True},
+    "今天当前时刻（公历）": {"year": today.year, "month": today.month, "day": today.day, "hour": today.hour, "calendar": "公历", "is_leap": False, "is_female": False},
+}
+
+st.sidebar.header("输入参数")
+with st.sidebar.form("bazi-form"):
+    preset_name = st.selectbox("快速填充", list(presets.keys()), index=0)
+    defaults = presets[preset_name] or {
+        "year": today.year,
+        "month": today.month,
+        "day": today.day,
+        "hour": today.hour,
+        "calendar": "公历",
+        "is_leap": False,
+        "is_female": False,
+    }
+    year = st.number_input("年", min_value=1850, max_value=2100, value=defaults["year"], step=1)
+    month = st.number_input("月", min_value=1, max_value=12, value=defaults["month"], step=1)
+    day = st.number_input("日", min_value=1, max_value=31, value=defaults["day"], step=1)
+    hour = st.number_input("时 (0-23)", min_value=0, max_value=23, value=defaults["hour"], step=1, help="按24小时制")
+    calendar = st.radio("日期类型", ["公历", "农历"], index=0 if defaults["calendar"] == "公历" else 1, horizontal=True)
+    is_leap = st.checkbox("闰月（仅农历有效）", value=defaults["is_leap"])
+    is_female = st.checkbox("女性（-n）", value=defaults["is_female"])
+    submitted = st.form_submit_button("开始排盘", type="primary")
 
 if submitted:
     args = [str(year), str(month), str(day), str(hour)]
@@ -76,23 +108,32 @@ if submitted:
     if is_female:
         args.append("-n")
 
-    st.info("执行命令：" + " ".join(args))
-    code, stdout, stderr, cmd = run_bazi(args)
+    st.markdown(f"**当前参数：** `{year}-{month:02d}-{day:02d} {hour:02d}点` · 历法：{calendar} · 闰月：{is_leap} · 女性：{is_female}")
+    st.caption("执行命令（等价命令行）")
+    st.code(" ".join([str(x) for x in cmd]) if (cmd := [sys.executable, str(BAZI_SCRIPT)] + args) else "", language="bash")
 
-    st.code(" ".join(cmd), language="bash")
+    code, stdout, stderr, _ = run_bazi(args)
 
     if stdout:
+        tabs = st.tabs(["分段视图", "原始输出"])
         sections = split_sections(stdout)
-        if sections:
-            st.subheader("排盘结果（分段）")
-            for idx, (title, content) in enumerate(sections, start=1):
-                with st.expander(f"部分 {idx}: {title}"):
-                    st.code(content, language="text")
-        st.subheader("原始输出")
-        st.code(stdout, language="text")
+        with tabs[0]:
+            if sections:
+                st.subheader("分段查看")
+                for idx, (title, content) in enumerate(sections, start=1):
+                    with st.expander(f"部分 {idx}: {title}"):
+                        st.code(content, language="text")
+            else:
+                st.code(stdout, language="text")
+        with tabs[1]:
+            st.code(stdout, language="text")
+
     if stderr:
         st.warning("stderr：\n" + stderr)
     if code != 0:
         st.error(f"进程返回码：{code}")
 else:
-    st.write("填写参数后点击“开始排盘”即可在本地运行原有 bazi.py。")
+    st.markdown(
+        '<div class="note-box">填写侧栏参数后点击“开始排盘”即可在本地调用原有 bazi.py 完成排盘。</div>',
+        unsafe_allow_html=True,
+    )
