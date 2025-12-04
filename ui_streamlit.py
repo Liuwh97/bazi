@@ -37,6 +37,19 @@ def run_bazi(args: list[str]):
     return result.returncode, stdout, stderr, cmd
 
 
+def split_sections(text: str):
+    """按长横线分段，便于在 UI 中展开查看。"""
+    parts = re.split(r"\n?-{20,}\n?", text)
+    cleaned = []
+    for part in parts:
+        p = part.strip()
+        if not p:
+            continue
+        title_line = p.splitlines()[0][:60]
+        cleaned.append((title_line, p))
+    return cleaned
+
+
 today = datetime.datetime.now()
 st.subheader("输入参数")
 with st.form("bazi-form"):
@@ -69,7 +82,14 @@ if submitted:
     st.code(" ".join(cmd), language="bash")
 
     if stdout:
-        st.text_area("输出", stdout, height=640)
+        sections = split_sections(stdout)
+        if sections:
+            st.subheader("排盘结果（分段）")
+            for idx, (title, content) in enumerate(sections, start=1):
+                with st.expander(f"部分 {idx}: {title}"):
+                    st.code(content, language="text")
+        st.subheader("原始输出")
+        st.code(stdout, language="text")
     if stderr:
         st.warning("stderr：\n" + stderr)
     if code != 0:
