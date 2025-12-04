@@ -21,6 +21,7 @@ st.set_page_config(page_title="八字排盘 (Streamlit)", page_icon="🧮", layo
 st.markdown(
     """
     <style>
+    body {background-color: #f6f8fb;}
     .note-box {
         padding: 0.5rem 0.75rem;
         background: #f5f7fa;
@@ -28,6 +29,35 @@ st.markdown(
         border-radius: 6px;
     }
     .small-mono {font-family: SFMono-Regular,Consolas,Menlo,monospace; font-size: 12px;}
+    .section-card {
+        margin: 0.35rem 0;
+        padding: 0.5rem 0.75rem;
+        background: #ffffff;
+        border: 1px solid #e6e9ef;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .section-header {
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    .section-title {
+        font-weight: 600;
+        margin-top: 2px;
+        color: #334155;
+    }
+    .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #eef2ff;
+        color: #4338ca;
+        border: 1px solid #c7d2fe;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -64,6 +94,23 @@ def split_sections(text: str):
         title_line = p.splitlines()[0][:60]
         cleaned.append((title_line, p))
     return cleaned
+
+
+def render_section_cards(sections):
+    """带色条的章节式展示。"""
+    palette = ["#2563eb", "#db2777", "#059669", "#f59e0b", "#7c3aed", "#0ea5e9"]
+    for idx, (title, content) in enumerate(sections, start=1):
+        color = palette[(idx - 1) % len(palette)]
+        st.markdown(
+            f"""
+            <div class="section-card" style="border-left: 6px solid {color};">
+                <div class="section-header" style="color:{color};">部分 {idx}</div>
+                <div class="section-title">{title}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.code(content, language="text")
 
 
 today = datetime.datetime.now()
@@ -120,9 +167,7 @@ if submitted:
         with tabs[0]:
             if sections:
                 st.subheader("分段查看")
-                for idx, (title, content) in enumerate(sections, start=1):
-                    with st.expander(f"部分 {idx}: {title}"):
-                        st.code(content, language="text")
+                render_section_cards(sections)
             else:
                 st.code(stdout, language="text")
         with tabs[1]:
