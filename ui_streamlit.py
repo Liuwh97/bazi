@@ -2,6 +2,7 @@
 # Streamlit UI for bazi.py. 输入年月日时，调用原脚本进行排盘。
 
 import datetime
+import os
 import re
 import subprocess
 import sys
@@ -22,12 +23,14 @@ st.caption("基于 bazi.py，所有计算在本地完成，方便保持与上游
 def run_bazi(args: list[str]):
     """调用 bazi.py，返回 (returncode, stdout, stderr, cmd)。"""
     cmd = [sys.executable, str(BAZI_SCRIPT)] + args
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
     result = subprocess.run(
         cmd,
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
+        env=env,
     )
     stdout = ANSI_RE.sub("", result.stdout)
     stderr = ANSI_RE.sub("", result.stderr)
