@@ -13,7 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent
 BAZI_SCRIPT = BASE_DIR / "bazi.py"
 ANSI_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
-st.set_page_config(title="八字排盘 (Streamlit)", page_icon="🧮", layout="wide")
+# Streamlit 1.52 参数为 page_title（旧版是 title）
+st.set_page_config(page_title="八字排盘 (Streamlit)", page_icon="🧮", layout="wide")
 st.title("八字排盘（Streamlit UI）")
 st.caption("基于 bazi.py，所有计算在本地完成，方便保持与上游代码同步。")
 
