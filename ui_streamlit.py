@@ -2,6 +2,7 @@
 # Streamlit UI for bazi.py. 输入年月日时，调用原脚本进行排盘。
 
 import datetime
+import html
 import os
 import re
 import subprocess
@@ -58,6 +59,19 @@ st.markdown(
         color: #4338ca;
         border: 1px solid #c7d2fe;
     }
+    .section-body {
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: SFMono-Regular,Consolas,Menlo,monospace;
+        font-size: 13px;
+        line-height: 1.45;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .section-body code {background: transparent;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -101,16 +115,17 @@ def render_section_cards(sections):
     palette = ["#2563eb", "#db2777", "#059669", "#f59e0b", "#7c3aed", "#0ea5e9"]
     for idx, (title, content) in enumerate(sections, start=1):
         color = palette[(idx - 1) % len(palette)]
+        safe_content = html.escape(content)
         st.markdown(
             f"""
             <div class="section-card" style="border-left: 6px solid {color};">
                 <div class="section-header" style="color:{color};">部分 {idx}</div>
                 <div class="section-title">{title}</div>
+                <pre class="section-body">{safe_content}</pre>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.code(content, language="text")
 
 
 today = datetime.datetime.now()
