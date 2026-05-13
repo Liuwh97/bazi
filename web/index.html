@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>八字排盘 - Web 控制台</title>
+  <style>
+    :root {
+      --bg: #f5f6fb;
+      --card: #ffffff;
+      --card-soft: #f8fafc;
+      --card-strong: #eef2ff;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+      --text: #0f172a;
+      --accent: #2563eb;
+      --accent-weak: #e0e7ff;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(circle at 10% 20%, #eef2ff 0, rgba(238,242,255,0) 30%),
+                  radial-gradient(circle at 90% 0, #e0f2fe 0, rgba(224,242,254,0) 28%),
+                  var(--bg);
+      color: var(--text);
+    }
+    .page { max-width: 1200px; margin: 0 auto; padding: 28px 16px 64px; }
+    h1 { margin: 0; font-size: 30px; letter-spacing: 0.2px; }
+    p { margin: 0; }
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 22px;
+      border-radius: 16px;
+      background: linear-gradient(120deg, #eef2ff, #e0f2fe);
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 10px 26px rgba(37, 99, 235, 0.12);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .hero .eyebrow { text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; color: #475569; font-size: 12px; }
+    .hero .muted { margin-top: 8px; max-width: 620px; line-height: 1.6; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { background: #fff; border: 1px dashed #cbd5e1; color: #334155; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 12px; background: var(--card); border: 1px solid #dbeafe; color: #1d4ed8; font-weight: 800; box-shadow: 0 6px 14px rgba(37,99,235,0.1); }
+    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 16px; margin-top: 18px; align-items: start; }
+    .stack { display: flex; flex-direction: column; gap: 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .card.emphasis { border: 1px solid #c7d2fe; background: linear-gradient(135deg, #eef2ff 0%, #ffffff 65%); box-shadow: 0 12px 30px rgba(37,99,235,0.12); }
+    .card.soft { background: var(--card-soft); }
+    .card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0), rgba(37,99,235,0.05)); opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
+    .card:hover::after { opacity: 1; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .title { font-weight: 800; color: #0f172a; font-size: 17px; letter-spacing: 0.2px; }
+    .eyebrow-sm { text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: #475569; font-size: 11px; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 2px; line-height: 1.5; }
+    .divider { height: 1px; background: var(--border); margin: 10px 0; }
+    .section-title { color: var(--muted); font-size: 13px; margin: 0 0 6px; }
+    .muted { color: var(--muted); font-size: 14px; }
+    form label { display: block; font-weight: 700; margin-bottom: 4px; color: #0f172a; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 12px; }
+    input[type="number"] { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; background: #f8fafc; transition: border 0.2s ease, box-shadow 0.2s ease; }
+    input[type="number"]:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .inline { display: flex; align-items: center; gap: 8px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: all 0.15s ease;
+    }
+    button:hover { filter: brightness(1.03); box-shadow: 0 8px 16px rgba(37,99,235,0.12); }
+    button.secondary { background: #fff; color: var(--accent); }
+    button.ghost { background: transparent; color: #334155; border-color: var(--border); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+    .status-pill {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .status-pill .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 4px rgba(148,163,184,0.15); }
+    .status-pill.ok { border-color: rgba(34,197,94,0.25); background: #f0fdf4; }
+    .status-pill.ok .dot { background: var(--success); box-shadow: 0 0 0 4px rgba(34,197,94,0.15); }
+    .status-pill.error { border-color: rgba(239,68,68,0.3); background: #fef2f2; }
+    .status-pill.error .dot { background: var(--error); box-shadow: 0 0 0 4px rgba(239,68,68,0.15); }
+    .status-pill.running { border-color: rgba(37,99,235,0.2); background: #eef2ff; }
+    .status-pill.running .dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(37,99,235,0.15); }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 8px; }
+    .stat { padding: 12px 14px; border-radius: 10px; border: 1px solid #d9e3ff; background: linear-gradient(135deg, #eef2ff, #ffffff); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
+    .stat .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; }
+    .stat .value { font-weight: 800; margin-top: 4px; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .pill { background: #f3f4f6; border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+    .tab-bar { display: flex; gap: 8px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+    .tab { flex: 1; padding: 10px 12px; border: none; border-radius: 8px; background: transparent; font-weight: 700; color: #475569; cursor: pointer; }
+    .tab.active { background: #e0e7ff; color: #1d4ed8; border: 1px solid #c7d2fe; }
+    .tab-panel { margin-top: 12px; }
+    .hidden { display: none; }
+    .section-item { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; background: linear-gradient(90deg, #f8fafc, #ffffff 45%); box-shadow: 0 4px 14px rgba(0,0,0,0.03); position: relative; }
+    .section-item::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, #60a5fa, #a78bfa); }
+    .section-header { padding: 10px 12px; background: #f1f5f9; font-weight: 800; border-bottom: 1px solid var(--border); color: #0f172a; }
+    .section-body { padding: 10px 12px; }
+    .mono { font-family: SFMono-Regular, Consolas, "Courier New", monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+    .raw-box { border: 1px solid #0f172a; border-radius: 12px; padding: 14px; background: linear-gradient(145deg, #0b132b, #111827); color: #e5e7eb; min-height: 320px; overflow: auto; box-shadow: 0 12px 24px rgba(0,0,0,0.35); }
+    .tip-list { padding-left: 18px; margin: 6px 0 0; color: var(--muted); }
+    .tip-list li { margin: 4px 0; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .hero { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+        <div class="hero">
+      <div>
+        <div class="eyebrow">FastAPI + 静态页</div>
+        <h1>八字排盘 · Web 控制台</h1>
+        <p class="muted">左侧输入参数，右侧即时展示分段与原始输出，突出状态与命令行映射，彻底抛弃 Streamlit。</p>
+        <div class="chip-row">
+          <span class="chip">启动：uvicorn api:app --reload --port 8000</span>
+          <span class="chip">接口：GET /bazi</span>
+          <span class="chip">默认去除 ANSI 颜色</span>
+        </div>
+      </div>
+      <div style="display:flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="badge">实时计算 · 本地</div>
+        <div id="status" class="status-pill">
+          <span class="dot"></span>
+          <div>
+            <div class="title" style="font-size:14px;">尚未请求</div>
+            <div class="muted" id="status-desc">等待输入</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="layout">
+      <div class="stack">
+        <div class="card emphasis">
+          <div class="card-head">
+            <div class="title">参数输入</div>
+            <span class="pill">快速预设</span>
+          </div>
+          <form id="bazi-form">
+            <div class="grid">
+              <div>
+                <label for="year">年</label>
+                <input id="year" name="year" type="number" min="1850" max="2100" required />
+              </div>
+              <div>
+                <label for="month">月</label>
+                <input id="month" name="month" type="number" min="1" max="12" required />
+              </div>
+              <div>
+                <label for="day">日</label>
+                <input id="day" name="day" type="number" min="1" max="31" required />
+              </div>
+              <div>
+                <label for="hour">时 (0-23)</label>
+                <input id="hour" name="hour" type="number" min="0" max="23" required />
+              </div>
+              <div>
+                <label>历法</label>
+                <div class="inline">
+                  <label class="inline"><input type="radio" name="calendar" value="公历" checked /> 公历</label>
+                  <label class="inline"><input type="radio" name="calendar" value="农历" /> 农历</label>
+                </div>
+              </div>
+              <div>
+                <label>选项</label>
+                <div class="inline"><input id="is_leap" type="checkbox" /> 闰月（仅农历）</div>
+                <div class="inline"><input id="female" type="checkbox" /> 女性（-n）</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="submit" id="run-btn">开始排盘</button>
+              <button type="button" class="secondary" id="preset-example">示例参数</button>
+              <button type="button" class="ghost" id="preset-now">当前时刻</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card soft">
+          <div class="card-head">
+            <div class="title">使用提示</div>
+          </div>
+          <ul class="tip-list">
+            <li>界面仅调用 /bazi，后端逻辑与 bazi.py 完全一致。</li>
+            <li>若想看 ANSI 彩色输出，可将 strip_ansi 设为 false（需自行改 URL）。</li>
+            <li>接口异常会在右侧状态卡显示，同时保留原始响应文本。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card emphasis">
+          <div class="card-head">
+            <div class="title">最新执行</div>
+            <span class="pill" id="summary-count">未执行</span>
+          </div>
+          <div class="stat-grid">
+            <div class="stat">
+              <div class="label">命令</div>
+              <div class="value mono" id="cmd">python bazi.py ...</div>
+            </div>
+            <div class="stat">
+              <div class="label">历法 / 性别</div>
+              <div class="value" id="meta">-</div>
+            </div>
+            <div class="stat">
+              <div class="label">分段数量</div>
+              <div class="value" id="section-count">0</div>
+            </div>
+          </div>
+          <div class="pill-row" id="meta-tags"></div>
+        </div>
+
+        <div class="card emphasis">
+          <div class="card-head">
+            <div class="title">结果视图</div>
+            <span class="muted">分段 / 原始文本</span>
+          </div>
+          <div class="tab-bar">
+            <button class="tab active" data-tab="sections">分段视图</button>
+            <button class="tab" data-tab="raw">原始输出</button>
+          </div>
+          <div class="tab-panel" data-panel="sections">
+            <div id="sections" aria-live="polite">暂无结果</div>
+          </div>
+          <div class="tab-panel hidden" data-panel="raw">
+            <div class="raw-box mono" id="raw-output">等待请求...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('bazi-form');
+    const statusEl = document.getElementById('status');
+    const statusDesc = document.getElementById('status-desc');
+    const cmdEl = document.getElementById('cmd');
+    const metaEl = document.getElementById('meta');
+    const metaTags = document.getElementById('meta-tags');
+    const sectionCountEl = document.getElementById('section-count');
+    const summaryCount = document.getElementById('summary-count');
+    const rawOutput = document.getElementById('raw-output');
+    const sectionsEl = document.getElementById('sections');
+    const runBtn = document.getElementById('run-btn');
+    const presetExample = document.getElementById('preset-example');
+    const presetNow = document.getElementById('preset-now');
+    const tabButtons = document.querySelectorAll('[data-tab]');
+    const tabPanels = document.querySelectorAll('[data-panel]');
+
+    function setStatus(state, title, desc) {
+      statusEl.className = 'status-pill ' + (state || '');
+      const titleEl = statusEl.querySelector('.title');
+      if (titleEl) titleEl.textContent = title || '';
+      if (statusDesc) statusDesc.textContent = desc || '';
+    }
+
+    function switchTab(name) {
+      tabButtons.forEach(btn => {
+        const active = btn.dataset.tab === name;
+        btn.classList.toggle('active', active);
+      });
+      tabPanels.forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.panel !== name);
+      });
+    }
+
+    function fillNow() {
+      const d = new Date();
+      form.year.value = d.getFullYear();
+      form.month.value = d.getMonth() + 1;
+      form.day.value = d.getDate();
+      form.hour.value = d.getHours();
+    }
+
+    function fillExample() {
+      form.year.value = 1977;
+      form.month.value = 9;
+      form.day.value = 23;
+      form.hour.value = 19;
+      form.querySelector('input[name="calendar"][value="公历"]').checked = true;
+      document.getElementById('is_leap').checked = false;
+      document.getElementById('female').checked = true;
+    }
+
+    function renderSections(sections) {
+      if (!sections || !sections.length) {
+        sectionsEl.textContent = '无分段信息或输出为空。';
+        return;
+      }
+      sectionsEl.innerHTML = '';
+      sections.forEach((sec, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'section-item';
+        const head = document.createElement('div');
+        head.className = 'section-header';
+        head.textContent = `部分 ${idx + 1} · ${sec.title}`;
+        const body = document.createElement('div');
+        body.className = 'section-body mono';
+        body.textContent = sec.content;
+        wrap.appendChild(head);
+        wrap.appendChild(body);
+        sectionsEl.appendChild(wrap);
+      });
+    }
+
+    function buildCmd(args) {
+      return 'python bazi.py ' + args.join(' ');
+    }
+
+    function updateSummary(data, cmdArgs) {
+      const calendar = data.calendar || '未知历法';
+      const isLeap = data.is_leap || false;
+      const female = data.female || false;
+      const stripAnsi = data.strip_ansi === undefined ? true : data.strip_ansi;
+      cmdEl.textContent = buildCmd(cmdArgs);
+      metaEl.textContent = `${calendar} / ${female ? '女性' : '男性'}` + (isLeap ? ' / 闰月' : '');
+      sectionCountEl.textContent = (data.sections && data.sections.length) || 0;
+      summaryCount.textContent = `分段 ${sectionCountEl.textContent}`;
+      metaTags.innerHTML = '';
+      const tags = [
+        { label: '历法', value: calendar },
+        { label: '闰月', value: isLeap ? '是' : '否' },
+        { label: '女性', value: female ? '是' : '否' },
+        { label: '去色', value: stripAnsi ? '是' : '否' },
+      ];
+      tags.forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'pill';
+        span.textContent = `${t.label}：${t.value}`;
+        metaTags.appendChild(span);
+      });
+    }
+
+    async function runBazi(event) {
+      event.preventDefault();
+      runBtn.disabled = true;
+      setStatus('running', '请求中...', '调用 /bazi');
+      sectionsEl.textContent = '加载中...';
+      rawOutput.textContent = '加载中...';
+
+      const calendar = form.querySelector('input[name="calendar"]:checked').value;
+      const isLeap = document.getElementById('is_leap').checked;
+      const female = document.getElementById('female').checked;
+
+      const params = new URLSearchParams({
+        year: form.year.value,
+        month: form.month.value,
+        day: form.day.value,
+        hour: form.hour.value,
+        calendar,
+        is_leap: String(isLeap),
+        female: String(female),
+        strip_ansi: 'true',
+        split: 'true'
+      });
+
+      const cmdArgs = [form.year.value, form.month.value, form.day.value, form.hour.value];
+      if (calendar === '公历') cmdArgs.push('-g');
+      else if (isLeap) cmdArgs.push('-r');
+      if (female) cmdArgs.push('-n');
+
+      try {
+        const res = await fetch('/bazi?' + params.toString());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        renderSections(data.sections || []);
+        rawOutput.textContent = data.raw || '';
+        updateSummary(data, cmdArgs);
+        setStatus('ok', '排盘完成', 'HTTP 200 · 已更新结果');
+      } catch (err) {
+        console.error(err);
+        setStatus('error', '请求失败', err.message || '未知错误');
+        sectionsEl.textContent = '请求失败，检查后端是否已启动。';
+        rawOutput.textContent = '';
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+    form.addEventListener('submit', runBazi);
+    presetExample.addEventListener('click', fillExample);
+    presetNow.addEventListener('click', () => { fillNow(); form.querySelector('input[name="calendar"][value="公历"]').checked = true; document.getElementById('is_leap').checked = false; document.getElementById('female').checked = false; });
+
+    // 初始化默认值
+    fillNow();
+    document.getElementById('female').checked = false;
+    cmdEl.textContent = 'python bazi.py ...';
+    switchTab('sections');
+  </script>
+</body>
+</html>

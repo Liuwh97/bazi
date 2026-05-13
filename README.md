@@ -345,6 +345,12 @@ lunar_python: 丁巳 己酉 癸未 壬戌
 
 ```
 
+## HTTP 接口（FastAPI）
+- 安装依赖：`pip install -r requirements-api.txt`
+- 启动：`uvicorn api:app --reload --port 8000`
+- 示例调用：`GET http://localhost:8000/bazi?year=1977&month=9&day=23&hour=19&calendar=公历&female=true`
+- 返回 JSON，包含原始排盘文本 `raw` 以及按分隔线拆分的 `sections`。
+
 ### 更多书籍 (访问密码: 2274) 点击“普通下载”下面的“立即下载”可浏览器下载
 
 - [生活智慧掌中宝37_解密家装1家庭风水一学就会.pdf](https://url97.ctfile.com/f/18113597-810840303-8cd789?p=2274)
